@@ -1,5 +1,8 @@
 import csv
+import codecs
 import datetime
+import ofxparse
+import hashlib
 
 from silverstrike.models import Account, Category, ImportConfiguration, Split, Transaction
 
@@ -56,6 +59,39 @@ def import_csv(path, config):
                              transaction=j, amount=-float(e['amount']), date=e['date'])
 
 
+def import_ofx(ofx_path):
+    with codecs.open(ofx_path) as f:
+        ofx = ofxparse.OfxParser.parse(f)
+
+    for account in ofx.accounts:
+        account_digest = 'sha256:{}'.format(hashlib.sha256(account.account_id.encode('utf8')).hexdigest())
+        ss_acct, _ = Account.objects.get_or_create(digest=account_digest, defaults=dict(
+            name=account.account_id,
+            digest=account_digest,
+            account_type=Account.PERSONAL,
+        ))
+        for transaction in account.statement.transactions:
+            print('Importing transaction: id={}, payee={}, type={}, date={}, amount={}, memo={}, sic={}, mcc={}, checknum={}'.format(
+                transaction.id, transaction.payee, transaction.type, transaction.date, transaction.amount,
+                transaction.memo, transaction.sic, transaction.mcc, transaction.checknum))
+
+            payee_acct, _ = Account.objects.get_or_create(name=transaction.payee, defaults=dict(
+                name=transaction.payee,
+                account_type=Account.FOREIGN,
+            ))
+            if transaction.amount < 0:
+                transaction_type = Transaction.WITHDRAW
+            else:
+                transaction_type = Transaction.DEPOSIT
+
+            title = '{} {}'.format(transaction.memo, transaction.payee).strip()
+            t = Transaction.objects.create(title=title, date=transaction.date, transaction_type=transaction_type)
+            Split.objects.create(account=ss_acct, opposing_account=payee_acct,
+                                transaction=t, amount=round(transaction.amount, 3), date=transaction.date)
+            Split.objects.create(account=payee_acct, opposing_account=ss_acct,
+                                transaction=t, amount=-1*round(transaction.amount, 3), date=transaction.date)
+
+
 def import_firefly(csv_path):
     date = 'date'
     title = 'description'
@@ -97,7 +133,7 @@ def import_firefly(csv_path):
                 notes = line[notes]
                 continue
             if line[source] in personal_accounts:
-                    line[source] = personal_accounts[line[source]]
+                line[source] = personal_accounts[line[source]]
             else:
                 a = Account.objects.create(name=line[source],
                                            account_type=Account.PERSONAL)

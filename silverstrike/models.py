@@ -37,6 +37,7 @@ class Account(models.Model):
 
     name = models.CharField(max_length=64)
     account_type = models.IntegerField(choices=ACCOUNT_TYPES, default=PERSONAL)
+    digest = models.CharField(max_length=255, null=True)
     active = models.BooleanField(default=True)
     last_modified = models.DateTimeField(auto_now=True)
     show_on_dashboard = models.BooleanField(default=False)

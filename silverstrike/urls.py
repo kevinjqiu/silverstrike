@@ -120,6 +120,7 @@ urlpatterns = [
 
     path('import/', import_views.ImportView.as_view(), name='import'),
     path('import/firefly/', import_views.ImportFireflyView.as_view(), name='import_firefly'),
+    path('import/ofx/', import_views.ImportOFXView.as_view(), name='import_ofx'),
     path('import/generic/', import_views.ImportUploadView.as_view(), name='import_generic'),
     path('import/generic/<uuid:uuid>/', import_views.ImportConfigureView.as_view(),
          name='import_configure'),

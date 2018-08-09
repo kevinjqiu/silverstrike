@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.views import generic
 
 from silverstrike.forms import CSVDefinitionForm, ExportForm, ImportUploadForm
-from silverstrike.lib import import_csv, import_firefly
+from silverstrike.lib import import_csv, import_firefly, import_ofx
 from silverstrike.models import ImportConfiguration, ImportFile, Split
 
 
@@ -23,6 +23,17 @@ class ImportFireflyView(LoginRequiredMixin, generic.edit.CreateView):
     def form_valid(self, form):
         self.object = form.save()
         import_firefly(self.object.file.path)
+        return HttpResponseRedirect(reverse('index'))
+
+
+class ImportOFXView(LoginRequiredMixin, generic.edit.CreateView):
+    model = ImportFile
+    fields = ['file']
+    template_name = 'silverstrike/import_upload.html'
+
+    def form_valid(self, form):
+        self.object = form.save()
+        import_ofx(self.object.file.path)
         return HttpResponseRedirect(reverse('index'))
 
 
