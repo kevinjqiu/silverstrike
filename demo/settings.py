@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
+import locale
 import os
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -135,7 +136,9 @@ USE_L10N = True
 
 USE_TZ = True
 
+LOCALE = 'en_CA.UTF-8'
 
+locale.setlocale(locale.LC_ALL, LOCALE)
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 

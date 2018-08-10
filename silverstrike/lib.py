@@ -63,6 +63,12 @@ def import_ofx(ofx_path):
     with codecs.open(ofx_path) as f:
         ofx = ofxparse.OfxParser.parse(f)
 
+    result = {
+        'imported': 0,
+        'skipped': 0,
+        'failed': 0,
+    }
+
     for account in ofx.accounts:
         account_digest = 'sha256:{}'.format(hashlib.sha256(account.account_id.encode('utf8')).hexdigest())
         ss_acct, _ = Account.objects.get_or_create(digest=account_digest, defaults=dict(
@@ -85,7 +91,8 @@ def import_ofx(ofx_path):
                 transaction_type = Transaction.DEPOSIT
 
             title = '{} {}'.format(transaction.memo, transaction.payee).strip()
-            t = Transaction.objects.create(title=title, date=transaction.date, transaction_type=transaction_type)
+            t = Transaction.objects.create(title=title, date=transaction.date,
+                                           transaction_type=transaction_type, fitid=transaction.id)
             Split.objects.create(account=ss_acct, opposing_account=payee_acct,
                                 transaction=t, amount=round(transaction.amount, 3), date=transaction.date)
             Split.objects.create(account=payee_acct, opposing_account=ss_acct,

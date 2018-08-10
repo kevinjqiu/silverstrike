@@ -133,6 +133,7 @@ class Transaction(models.Model):
     date = models.DateField(default=date.today)
     notes = models.TextField(blank=True, null=True)
     transaction_type = models.IntegerField(choices=TRANSACTION_TYPES)
+    fitid = models.CharField(max_length=255, unique=True, null=True)
     last_modified = models.DateTimeField(auto_now=True)
     recurrence = models.ForeignKey('RecurringTransaction', models.SET_NULL,
                                    related_name='recurrences', blank=True, null=True)
