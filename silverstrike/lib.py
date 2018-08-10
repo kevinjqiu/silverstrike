@@ -64,9 +64,9 @@ def import_ofx(ofx_path):
         ofx = ofxparse.OfxParser.parse(f)
 
     result = {
-        'imported': 0,
-        'skipped': 0,
-        'failed': 0,
+        'imported': [],
+        'skipped': [],
+        'failed': [],
     }
 
     for account in ofx.accounts:
@@ -91,12 +91,25 @@ def import_ofx(ofx_path):
                 transaction_type = Transaction.DEPOSIT
 
             title = '{} {}'.format(transaction.memo, transaction.payee).strip()
-            t = Transaction.objects.create(title=title, date=transaction.date,
-                                           transaction_type=transaction_type, fitid=transaction.id)
-            Split.objects.create(account=ss_acct, opposing_account=payee_acct,
-                                transaction=t, amount=round(transaction.amount, 3), date=transaction.date)
-            Split.objects.create(account=payee_acct, opposing_account=ss_acct,
-                                transaction=t, amount=-1*round(transaction.amount, 3), date=transaction.date)
+            t = Transaction.objects.get(fitid=transaction.id)
+            if t:
+                print('transaction {} is already imported. Skip.'.format(transaction.id))
+                result['skipped'].append(t)
+                continue
+
+            try:
+                t = Transaction.objects.create(title=title, date=transaction.date,
+                                            transaction_type=transaction_type, fitid=transaction.id)
+                Split.objects.create(account=ss_acct, opposing_account=payee_acct,
+                                    transaction=t, amount=round(transaction.amount, 3), date=transaction.date)
+                Split.objects.create(account=payee_acct, opposing_account=ss_acct,
+                                    transaction=t, amount=-1*round(transaction.amount, 3), date=transaction.date)
+            except Exception as e:
+                print('Encountered exception during import of transaction {}: {}'.format(transaction.id, str(e)))
+                result['failed'].append(t)
+            else:
+                result['imported'].append(t)
+    return result
 
 
 def import_firefly(csv_path):
