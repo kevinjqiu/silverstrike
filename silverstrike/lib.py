@@ -91,8 +91,8 @@ def import_ofx(ofx_path):
                 transaction_type = Transaction.DEPOSIT
 
             title = '{} {}'.format(transaction.memo, transaction.payee).strip()
-            t = Transaction.objects.get(fitid=transaction.id)
-            if t:
+            t = Transaction.objects.filter(fitid=transaction.id)
+            if len(t) > 0:
                 print('transaction {} is already imported. Skip.'.format(transaction.id))
                 result['skipped'].append(t)
                 continue
